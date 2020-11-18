@@ -1,0 +1,7 @@
+## Interface: 90002
+## Version: 1.5.2
+## Title: RPEmotes
+## Authors: Hallc
+## SavedVariablesPerCharacter: RPE_Settings
+
+Emotes.lua
