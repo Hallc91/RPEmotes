@@ -4,4 +4,7 @@
 ## Authors: Hallc
 ## SavedVariablesPerCharacter: RPE_Settings
 
+## X-Curse-Project-ID: 286887
+## X-WoWI-ID: 25782
+
 Emotes.lua
