@@ -762,8 +762,8 @@ function SlashCmdList.SIP(msg, editbox)
 	SendChatMessage(output,"EMOTE")
 end 
 
-SLASH_SIP1 = '/swig';
-function SlashCmdList.SIP(msg, editbox)
+SLASH_SWIG1 = '/swig';
+function SlashCmdList.SWIG(msg, editbox)
 	local drink = "drink"
 	local emote = swigEmotes[math.random(#swigEmotes)]
 	local output = ""
