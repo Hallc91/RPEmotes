@@ -104,7 +104,6 @@ local emoteTable = {
 	"wag - You wag your eyebrows.",
 	"watch - You pull out your watch to check the time.",
 }
-
 local spinListHelp = {
 	"/spinlist add [players] to add players to the list.",
 	"/spinlist del [players] to delete players from the list.",
