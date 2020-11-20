@@ -1,5 +1,5 @@
 ## Interface: 90002
-## Version: 1.5.5
+## Version: 1.5.6
 ## Title: RPEmotes
 ## Authors: Hallc
 ## SavedVariablesPerCharacter: RPE_Settings
