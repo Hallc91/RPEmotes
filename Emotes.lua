@@ -1,6 +1,8 @@
 RPE_Settings = {
-	truncate = false
+	truncate = false,
+	diceTog = true
 }
+if RPE_Settings["diceTog"] == nil then RPE_Settings["diceTog"] = true end
 local dealerHand  = 0
 local dealerTbl = {}
 local colour = {"Hearts", "Spades", "Clubs", "Diamonds"}
@@ -16,6 +18,8 @@ local user = UnitName("player")
 local gender = UnitSex("player")
 local target = nil
 local totalDecks = 1
+local defaultDiceRoll = 10000
+local magicDiceRoll = defaultDiceRoll
 local blackjackPlayers = {}
 local spinList = {}
 local pronouns = {{},
@@ -79,6 +83,9 @@ local Backdrop = {
         }
     }
 local helpTable = {
+	"/rpe Emotes - Will list all the custom emotes available.",
+	"/rpe Blackjack - Will show help for the Blackjack command.",
+	"/rpe Games - Will show all available games in the addon.",
 	"/8ball [Question] - This asks the magic 8ball, shakes it and then gives you a randomly selected response.",
 	"/draw [Number] - Draws a number of cards specified from a 52 Deck of Cards. If the will automatically shuffle the deck if needed.",
 	"/shuffle [Number] - Shuffles the Deck of Cards, use if you want to reset the deck before it's empty. Number specifies the number of decks to use between 1-6.",
@@ -86,12 +93,6 @@ local helpTable = {
 	"/tdraw [Number] - Draws a number of cards specified from the Tarot Deck. If the will automatically shuffle the deck if needed.",
 	"/tshuffle [S] - Shuffles the Tarot Deck, use if you want to reset the deck before it's empty.",
 	"/tcheck - Checks how many cards remain in the tarot deck without drawing any. If S is supplied player will be ouput to the user only.",
-	"/spin [S] - Spins a bottle for the players listed. If no list exists then one is generated from your present group/raid (excluding offline players). If S is supplied player will be ouput to the user only.",
-	"/spinlist - Used for the above spin command. Use to display more options.",
-	"Blackjack - Use /deal and /hit to deal out cards to the targetted player. Deal provides two cards, Hit provides one. Use /shuffle to re-shuffle your deck.",
-	"Using /Blackjack will now open up a Blackjack Dealer UI.",
-	"/rpe truncate - Will remove the excess text from cards. Suggested mode for playing blackjack as cards will show as (Ace) rather than (Ace of Diamonds).",
-	"/rpe Emotes - Will list all the custom emotes available."
 }
 local emoteTable = {
 	"flip - Flips a coin in the air and displays the result.",
@@ -110,6 +111,35 @@ local spinListHelp = {
 	"/spinlist clear to clear the list.",
 	"/spinlist players to display the current list."
 }
+local blackjackTable = {
+	"Use /Blackjack to open up a Blackjack Dealer UI.",
+	"Use /deal and /hit to deal out cards to the targetted player. Deal provides two cards, Hit provides one. Use /shuffle to re-shuffle your deck.",
+	"/blackjack t - Will remove the excess text from cards. Suggested mode for playing blackjack as cards will show as (Ace) rather than (Ace of Diamonds)."
+}
+local gameTable = {
+	"/spin [S] - Spins a bottle for the players listed. If no list exists then one is generated from your present group/raid (excluding offline players). If S is supplied player will be ouput to the user only.",
+	"/spinlist - Used for the above spin command. Use to display more options.",
+	"/md, /magicdice - Makes a roll using the last result as the highest value. Loser is the first to hit 1. (Starts at 10000)",
+	"/dice [dice] - A simple dice roller. Requires an input in a format matching '1d6'. Should support any combination.",
+	"/dice toggle - Use to swap between public and silent mode for the dice rolling."
+}
+local rollFrame = CreateFrame("Frame",nil,UIParent,'BackdropTemplate')
+rollFrame:SetScript("OnEvent",function(self,event,...)
+	local arg1 = select(1,...)
+	if arg1 then
+		local name,roll,minRoll,maxRoll = arg1:match("^(.+) rolls (%d+) %((%d+)%-(%d+)%)$")
+		magicDiceRoll = roll
+	end
+end)
+rollFrame:RegisterEvent("CHAT_MSG_SYSTEM")
+
+local function flipBool(bool)
+	if bool == true then
+		return false
+	else
+		return true
+	end
+end
 
 local function getArticle(card)
 	if card == "Ace" or card == "Eight" then
@@ -562,21 +592,50 @@ local function bottleSpin(msg)
 	end
 end
 
+local function diceRoll(number,sides,toggle)
+local total = 0
+local diceTbl = {}
+local totalStr = ""
+number = tonumber(number)
+sides = tonumber(sides)
+
+for i = 1,number do
+	local result = math.random(sides)
+	total = total + result
+	table.insert(diceTbl,result)
+end
+if number >= 2 then
+	totalStr = string.format(" (%s)",total)
+end
+table.sort(diceTbl)
+local output = table.concat(diceTbl, ", ")
+local silent = string.format("Result of %dd%d: %s%s",number,sides,output,totalStr)
+local emote = string.format("rolls %dd%d getting: %s%s",number,sides,output,totalStr)
+
+if RPE_Settings["diceTog"] then
+	SendChatMessage(emote,"EMOTE")
+else 
+	SELECTED_CHAT_FRAME:AddMessage(silent)
+end
+
+end
+
 SLASH_RPEMOTES1 = '/RPE';
 SLASH_RPEMOTES2 = '/RPEmotes';
 function SlashCmdList.RPEMOTES(msg, editbox)
-	msg:lower()
-	if msg and msg == "truncate" or msg == "t" then
-		if RPE_Settings["truncate"] then
-			RPE_Settings["truncate"] = false
-			SELECTED_CHAT_FRAME:AddMessage("Cards drawn will now show their full name. (Ace of Clubs)")
-		else
-			RPE_Settings["truncate"] = true
-			SELECTED_CHAT_FRAME:AddMessage("Cards drawn will now only show their value. (Ace)")
-		end
-	elseif msg and msg == "emote" or msg == "emotes" or msg == "e" then
+	msg = msg:lower()
+	if msg and msg == "emote" or msg == "emotes" or msg == "e" then
 		for i = 1,#emoteTable do
 			SELECTED_CHAT_FRAME:AddMessage("|cFFFF7D0AEmote List: |r"..emoteTable[i])
+		end
+	elseif msg and msg == "bj" or msg == "blackjack" then
+		for i = 1,#blackjackTable do
+			SELECTED_CHAT_FRAME:AddMessage("|cFFFF7D0ABlackjack: |r"..blackjackTable[i])
+		end
+	elseif
+		msg and msg == "game" or msg == "games" or msg == "g" then
+		for i = 1,#gameTable do
+			SELECTED_CHAT_FRAME:AddMessage("|cFFFF7D0AGames: |r"..gameTable[i])
 		end
 	else
 		for i = 1,#helpTable do
@@ -612,7 +671,16 @@ end
 
 SLASH_BLACKJACK1 = '/blackjack';
 function SlashCmdList.BLACKJACK(msg, editbox)
-	blackjackUI()
+	if msg and msg == "truncate" or msg == "t" then
+		RPE_Settings["truncate"] = flipBool(RPE_Settings["truncate"])
+		if RPE_Settings["truncate"] then
+			SELECTED_CHAT_FRAME:AddMessage("Cards drawn will now only show their value. (Ace)")
+		else
+			SELECTED_CHAT_FRAME:AddMessage("Cards drawn will now show their full name. (Ace of Clubs)")
+		end
+	else
+		blackjackUI()
+	end
 end
 
 SLASH_CHECK1 = '/check';
@@ -793,4 +861,37 @@ function SlashCmdList.WATCH(msg, editbox)
 	local emote = "pulls out %s pocket watch and checks the time."
 	local output = emoteFormat(emote,pronouns[gender][2])
 	SendChatMessage(output,"EMOTE")
+end 
+
+SLASH_MAGICDICE1 = '/md';
+SLASH_MAGICDICE2 = '/magicdice';
+function SlashCmdList.MAGICDICE(msg, editbox)
+	msg = tonumber(msg) 
+	magicDiceRoll = tonumber(magicDiceRoll)
+	if msg and msg ~= "" then
+		magicDiceRoll = msg
+	end
+	if magicDiceRoll == 1 then
+		magicDiceRoll = defaultDiceRoll
+	end
+	RandomRoll(1, magicDiceRoll)
+end 
+
+SLASH_DICE1 = '/dice';
+function SlashCmdList.DICE(msg, editbox)
+	msg = msg:lower()
+	local number,sides = msg:match("(%d+)d(%d+)")
+	if msg == "t" or msg == "toggle" then
+		RPE_Settings["diceTog"] = flipBool(RPE_Settings["diceTog"])
+		if RPE_Settings["diceTog"] then 
+			SELECTED_CHAT_FRAME:AddMessage("Rolling dice will now output an emote.")
+		else
+			SELECTED_CHAT_FRAME:AddMessage("Rolling dice will now output privately.")
+		end
+	elseif number and sides then
+		diceRoll(number,sides,RPE_Settings["diceTog"])
+	else
+		print("Please provide dice matching the format '1d6'.")
+	end
+
 end 
