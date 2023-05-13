@@ -1,8 +1,21 @@
 RPE_Settings = {
 	truncate = false,
-	diceTog = true
+	diceTog = true,
+	gender = UnitSex("player"),
+	cardTog = false,
 }
-if RPE_Settings["diceTog"] == nil then RPE_Settings["diceTog"] = true end
+
+local loaded = CreateFrame("Frame");
+loaded:SetScript("OnEvent", function(__, event, arg1)
+    if (event == "ADDON_LOADED") then
+        if RPE_Settings["diceTog"] == nil then RPE_Settings["diceTog"] = true end
+        if RPE_Settings["cardTog"] == nil then RPE_Settings["cardTog"] = true end
+		if RPE_Settings["gender"] == nil then RPE_Settings["gender"] = UnitSex("player") end
+    end
+end);
+loaded:RegisterEvent("ADDON_LOADED");
+loaded = nil
+
 local dealerHand  = 0
 local dealerTbl = {}
 local colour = {"Hearts", "Spades", "Clubs", "Diamonds"}
@@ -15,7 +28,7 @@ local eightballtable = {"It is certain","It is decidedly so","Without a doubt","
 local CurrentCard = 0
 local CurrentTarot = 0
 local user = UnitName("player")
-local gender = UnitSex("player")
+--local gender = UnitSex("player")
 local target = nil
 local totalDecks = 1
 local defaultDiceRoll = 10000
@@ -24,7 +37,8 @@ local blackjackPlayers = {}
 local spinList = {}
 local pronouns = {{},
 	{"His","his","He","he","Man","man"},
-	{"Her","her","She","she","Woman","woman"}
+	{"Her","her","She","she","Woman","woman"},
+	{"Their","their","They","they","Person","person"}
 }
 local blackjackValues = {
 	Ace = 1,
@@ -45,7 +59,7 @@ local sipEmotes = {
 	"takes a sip of %s %s.",
 	"sips %s %s.",
 	"takes a slow sip of %s %s.",
-	"raises her cup to sip some of %s %s.",
+	"raises the cup to sip some of %s %s.",
 	"sips a little of %s %s, savouring the taste before swallowing.",
 	"raises %s %s to %s lips, inhaling deeply before deciding to take a sip."
 }
@@ -67,7 +81,8 @@ local ClassColourTable = {
 	ROGUE = "FFFFF569",
 	SHAMAN = "FF0070DE",
 	WARLOCK = "FF9482C9",
-	WARRIOR = "FFC79C6E"
+	WARRIOR = "FFC79C6E",
+	EVOKER = "FF33937F"
 }
 local Backdrop = {
         bgFile = "Interface\\ACHIEVEMENTFRAME\\UI-GuildAchievement-Parchment-Horizontal-Desaturated",  -- path to the background texture
@@ -244,10 +259,14 @@ end
 local function eightball(question)
 	local fortune = math.random(#eightballtable)
 	local output = ""
+	local askText = "asks"
+	if RPE_Settings.gender == 4 then
+		askText = "ask"
+	end
 	if question ~= "" then
-		output = string.format("reaches into %s pocket and lifts out a magic 8-Ball. %s quietly asks %q and then shakes it. The 8-Ball answers %q.",pronouns[gender][2],pronouns[gender][3],question,eightballtable[fortune])
+		output = string.format("reaches into %s pocket and lifts out a magic 8-Ball. %s quietly %s %q and then shakes it. The 8-Ball answers %q.",pronouns[RPE_Settings.gender][2],pronouns[RPE_Settings.gender][3],askText,question,eightballtable[fortune])
 	else
-		output = string.format("shakes %s magic 8-Ball and looks at the response. It reads %q.",pronouns[gender][2],eightballtable[fortune])
+		output = string.format("shakes %s magic 8-Ball and looks at the response. It reads %q.",pronouns[RPE_Settings.gender][2],eightballtable[fortune])
 	end
 	SendChatMessage(output,"EMOTE")
 end
@@ -331,7 +350,7 @@ local function drawcard(msg)
 	local firstArticle = getArticle(drawn[1])
 	drawncards = table.concat(drawn, ", ")
 	if num == 1 then plu = "one card" elseif num > #numbers then plu = "a lot of cards" else plu = numbers[num].." cards" end
-	local output = string.format("draws %s from %s deck: %s %s.",plu,pronouns[gender][2],firstArticle,drawncards)
+	local output = string.format("draws %s from %s deck: %s %s.",plu,pronouns[RPE_Settings.gender][2],firstArticle,drawncards)
 	SendChatMessage(output,"EMOTE")
 	return drawncards
 end
@@ -542,7 +561,7 @@ local function tarotshuffle()
 	shuffle(tarot)
 	CurrentTarot = #tarot
 	PlaySound(53186)
-	SendChatMessage("picks up "..pronouns[gender][2].." Tarot Deck and shuffles it.", "EMOTE")
+	SendChatMessage("picks up "..pronouns[RPE_Settings.gender][2].." Tarot Deck and shuffles it.", "EMOTE")
 end
 
 local function tarotdraw(msg)
@@ -568,7 +587,7 @@ local function tarotdraw(msg)
 		drawncards = drawn[1]
 	end
 	if num == 1 then plu = "one tarot card" elseif num > #numbers then plu = "a lot of tarot cards" else plu = numbers[num].." tarot cards" end
-	SendChatMessage("draws "..plu.." from "..pronouns[gender][2].." deck: "..drawncards..".","EMOTE")
+	SendChatMessage("draws "..plu.." from "..pronouns[RPE_Settings.gender][2].." deck: "..drawncards..".","EMOTE")
 end
 
 local function bottleSpin(msg)
@@ -688,7 +707,7 @@ function SlashCmdList.CHECK(msg, editbox)
 	if msg == "s" or msg == "S" then
 		SELECTED_CHAT_FRAME:AddMessage(string.format("There are %s cards remaining in your Deck.",CurrentCard))
 	else
-		SendChatMessage(string.format("checks %s deck of cards. There are %s Cards remaining.",pronouns[gender][2],CurrentCard),"EMOTE")
+		SendChatMessage(string.format("checks %s deck of cards. There are %s Cards remaining.",pronouns[RPE_Settings.gender][2],CurrentCard),"EMOTE")
 	end
 end
 
@@ -715,7 +734,7 @@ function SlashCmdList.TCHECK(msg, editbox)
 	if msg == "s" or msg == "S" then
 		SELECTED_CHAT_FRAME:AddMessage(string.format("There are %s cards remaining in your Tarot Deck.",CurrentTarot))
 	else
-		SendChatMessage(string.format("checks %s tarot deck. There are %s Tarot Cards remaining.",pronouns[gender][2],CurrentTarot),"EMOTE")
+		SendChatMessage(string.format("checks %s tarot deck. There are %s Tarot Cards remaining.",pronouns[RPE_Settings.gender][2],CurrentTarot),"EMOTE")
 	end
 end
 
@@ -723,7 +742,7 @@ SLASH_FLIP1 = '/flip';
 function SlashCmdList.FLIP(msg, editbox)
 	local num = math.random(2)
 	if num == 1 then Side = "Heads" else Side = "Tails" end
-	local output = string.format("flips a coin up into the air. %s catches it in %s palm, the coin showing %s.",pronouns[gender][3],pronouns[gender][2],Side)
+	local output = string.format("flips a coin up into the air. %s catches it in %s palm. It's %s!",pronouns[RPE_Settings.gender][3],pronouns[RPE_Settings.gender][2],Side)
 	SendChatMessage(output, "EMOTE")
 end
 
@@ -767,9 +786,9 @@ function SlashCmdList.SMILENOD(msg, editbox)
 	local target = UnitName("target")
 	local output = ""
 	if target and target ~= user then
-		output = emoteFormat(targetEmote,target,pronouns[gender][2])
+		output = emoteFormat(targetEmote,target,pronouns[RPE_Settings.gender][2])
 	else
-		output = emoteFormat(emote,pronouns[gender][2])
+		output = emoteFormat(emote,pronouns[RPE_Settings.gender][2])
 	end
 	SendChatMessage(output,"EMOTE")
 end 
@@ -781,9 +800,9 @@ function SlashCmdList.WAG(msg, editbox)
 	local target = UnitName("target")
 	local output = ""
 	if target and target ~= user then
-		output = emoteFormat(targetEmote,pronouns[gender][2],target)
+		output = emoteFormat(targetEmote,pronouns[RPE_Settings.gender][2],target)
 	else
-		output = emoteFormat(emote,pronouns[gender][2])
+		output = emoteFormat(emote,pronouns[RPE_Settings.gender][2])
 	end
 	SendChatMessage(output,"EMOTE")
 end 
@@ -810,9 +829,9 @@ function SlashCmdList.SQUINT(msg, editbox)
 	local target = UnitName("target")
 	local output = ""
 	if target and target ~= user then
-		output = emoteFormat(targetEmote,pronouns[gender][2],target)
+		output = emoteFormat(targetEmote,pronouns[RPE_Settings.gender][2],target)
 	else
-		output = emoteFormat(emote,pronouns[gender][2])
+		output = emoteFormat(emote,pronouns[RPE_Settings.gender][2])
 	end
 	SendChatMessage(output,"EMOTE")
 end 
@@ -825,7 +844,7 @@ function SlashCmdList.SIP(msg, editbox)
 	if msg ~= "" then
 		drink = msg
 	end
-	output = emoteFormat(emote,pronouns[gender][2],drink,pronouns[gender][2])
+	output = emoteFormat(emote,pronouns[RPE_Settings.gender][2],drink,pronouns[RPE_Settings.gender][2])
 	SendChatMessage(output,"EMOTE")
 end 
 
@@ -837,7 +856,7 @@ function SlashCmdList.SWIG(msg, editbox)
 	if msg ~= "" then
 		drink = msg
 	end
-	output = emoteFormat(emote,pronouns[gender][2],drink,pronouns[gender][2])
+	output = emoteFormat(emote,pronouns[RPE_Settings.gender][2],drink,pronouns[RPE_Settings.gender][2])
 	SendChatMessage(output,"EMOTE")
 end 
 
@@ -849,9 +868,9 @@ function SlashCmdList.SHAKEHEAD(msg, editbox)
 	local target = UnitName("target")
 	local output = ""
 	if target and target ~= user then
-		output = emoteFormat(targetEmote,pronouns[gender][2],target)
+		output = emoteFormat(targetEmote,pronouns[RPE_Settings.gender][2],target)
 	else
-		output = emoteFormat(emote,pronouns[gender][2])
+		output = emoteFormat(emote,pronouns[RPE_Settings.gender][2])
 	end
 	SendChatMessage(output,"EMOTE")
 end 
@@ -859,7 +878,7 @@ end
 SLASH_WATCH1 = '/watch';
 function SlashCmdList.WATCH(msg, editbox)
 	local emote = "pulls out %s pocket watch and checks the time."
-	local output = emoteFormat(emote,pronouns[gender][2])
+	local output = emoteFormat(emote,pronouns[RPE_Settings.gender][2])
 	SendChatMessage(output,"EMOTE")
 end 
 
@@ -871,7 +890,7 @@ function SlashCmdList.MAGICDICE(msg, editbox)
 	if msg and msg ~= "" then
 		magicDiceRoll = msg
 	end
-	if magicDiceRoll == 1 then
+	if not magicDiceRoll or magicDiceRoll == 1 then
 		magicDiceRoll = defaultDiceRoll
 	end
 	RandomRoll(1, magicDiceRoll)
@@ -893,5 +912,26 @@ function SlashCmdList.DICE(msg, editbox)
 	else
 		print("Please provide dice matching the format '1d6'.")
 	end
+end 
 
+SLASH_PRONOUNS1 = '/pronouns';
+function SlashCmdList.PRONOUNS(msg, editbox)
+	msg = msg:lower()
+	--Male Pronouns = 2
+	--Female Pronouns = 3
+	--Neutral Pronouns = 4
+	local output = ""
+	if msg == "male" then 
+		RPE_Settings.gender = 2
+		output = "Character Pronouns set to Male."
+	elseif msg == "female" then
+		RPE_Settings.gender = 3
+		output = "Character Pronouns set to Female."
+	elseif msg == "nonbinary" or msg == "non-binary" then
+		RPE_Settings.gender = 4
+		output = "Character Pronouns set to Non-Binary."
+	else 
+		output = "Please select an appropriate entry. Options are Male, Female, Non-Binary."
+	end
+	print(output)
 end 
