@@ -310,7 +310,7 @@ local function shuffledeck(msg)
 	deck = {}
 	if decks > 6 then 
 		decks = 6
-		SELECTED_CHAT_FRAME:AddMessage("Deck value provied was greater than 6. It's now 6.")
+		SELECTED_CHAT_FRAME:AddMessage("Deck value provied was greater than 6. Set to 6.")
 	end
 	for i = 1,decks do
 		for i=1,52 do
@@ -349,7 +349,13 @@ local function drawcard(msg)
 	cardInsert(blackjackPlayers,user,englishClass,drawn,false)
 	local firstArticle = getArticle(drawn[1])
 	drawncards = table.concat(drawn, ", ")
-	if num == 1 then plu = "one card" elseif num > #numbers then plu = "a lot of cards" else plu = numbers[num].." cards" end
+	if num == 1 then 
+		plu = "one card" 
+	elseif num > #numbers then 
+		plu = "a lot of cards" 
+	else 
+		plu = numbers[num].." cards" 
+	end
 	local output = string.format("draws %s from %s deck: %s %s.",plu,pronouns[RPE_Settings.gender][2],firstArticle,drawncards)
 	SendChatMessage(output,"EMOTE")
 	return drawncards
