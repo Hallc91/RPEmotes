@@ -498,7 +498,7 @@ local function blackjackUI()
 			local drawnCard = drawcard()
 			table.insert(dealerTbl,drawnCard)
 			dealerHand = cardValues(dealerTbl)
-			dealerTxt:SetText("Dealer Hand: "..dealerHand)
+			dealerTxt:SetText("Your Hand: "..dealerHand)
 			deckTxt:SetText("Cards Remaining: "..CurrentCard)
 		end)
 
